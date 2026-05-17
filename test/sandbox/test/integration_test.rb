@@ -630,6 +630,12 @@ class IntegrationTest < ActionDispatch::IntegrationTest
     end
   end
 
+  def test_returns_404_when_preview_example_is_inherited
+    assert_raises AbstractController::ActionNotFound do
+      get "/rails/view_components/my_component/render_with_template"
+    end
+  end
+
   def test_renders_a_mix_of_haml_and_erb
     skip if Rails::VERSION::STRING < "6.1"
 
@@ -741,6 +747,22 @@ class IntegrationTest < ActionDispatch::IntegrationTest
     assert_raises ViewComponent::SystemTestControllerNefariousPathError do
       get "/_system_test_entrypoint?file=#{path}"
     end
+  end
+
+  def test_path_traversal_to_sibling_directory_raises_error
+    base_dir = File.realpath(ViewComponentsSystemTestController.temp_dir)
+    sibling_dir = File.join(File.dirname(base_dir), "#{File.basename(base_dir)}_evil")
+    outside_file = File.join(sibling_dir, "secret.html.erb")
+
+    FileUtils.mkdir_p(sibling_dir)
+    File.write(outside_file, "<div>VC_SYSTEM_TEST_TRAVERSAL_POC</div>")
+
+    assert_raises ViewComponent::SystemTestControllerNefariousPathError do
+      get "/_system_test_entrypoint?file=../#{File.basename(sibling_dir)}/secret.html.erb"
+    end
+  ensure
+    FileUtils.rm_f(outside_file) if defined?(outside_file) && outside_file
+    FileUtils.rmdir(sibling_dir) if defined?(sibling_dir) && sibling_dir && Dir.exist?(sibling_dir)
   end
 
   def test_unsafe_component

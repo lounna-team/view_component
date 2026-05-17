@@ -23,7 +23,9 @@ class ViewComponentsSystemTestController < ActionController::Base # :nodoc:
   def validate_file_path
     base_path = ::File.realpath(self.class.temp_dir)
     @path = ::File.realpath(params.permit(:file)[:file], base_path)
-    unless @path.start_with?(base_path)
+    allowed_prefix = "#{base_path}#{File::SEPARATOR}"
+
+    unless @path == base_path || @path.start_with?(allowed_prefix)
       raise ViewComponent::SystemTestControllerNefariousPathError
     end
   end
