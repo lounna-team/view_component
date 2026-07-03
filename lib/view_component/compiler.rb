@@ -166,11 +166,19 @@ module ViewComponent
       end
     end
 
+    def template_handler_extensions
+      if ActionView::Template.respond_to?(:template_handler_extensions)
+        ActionView::Template.template_handler_extensions
+      else
+        ActionView::Template::Handlers.extensions.map(&:to_s)
+      end
+    end
+
     def gather_templates
       @templates ||=
         begin
           templates = @component.sidecar_files(
-            ActionView::Template.template_handler_extensions
+            template_handler_extensions
           ).map do |path|
             # Extract format and variant from template filename
             this_format, variant =
